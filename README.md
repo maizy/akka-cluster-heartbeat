@@ -5,7 +5,8 @@ Trying to implement minimal akka cluster app with a simple purpose.
 ## Dev
 
 ```
-sbt run
+cd akka-cluster-heartbeat
+sbt -Dlogback.configurationFile=dev-configs/logback-dev.xml -Dconfig.file=dev-configs/dev.conf run
 ```
 
 
