@@ -13,6 +13,6 @@ class HeartbeatStatsPrinter extends Actor {
 
   def receive = {
     case s: HeartbeatStats =>
-      log.info(s"${sender().path.name} => beats: ${s.beatsReceived}")
+      log.info(s"${sender().path.name} => beats: ${s.totalBeatsReceived}")
   }
 }

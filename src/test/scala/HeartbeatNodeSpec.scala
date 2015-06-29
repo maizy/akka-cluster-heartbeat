@@ -19,15 +19,15 @@ class HeartbeatNodeSpec
 
   "HeartbeatNode" should "increase counter on receive beat" in {
     val node = TestActorRef(Props[HeartbeatNode])
-    node.underlyingActor.asInstanceOf[HeartbeatNode].received should be(0)
+    node.underlyingActor.asInstanceOf[HeartbeatNode].totalBeatsReceived should be(0)
 
     node ! Beat
-    node.underlyingActor.asInstanceOf[HeartbeatNode].received should be(1)
+    node.underlyingActor.asInstanceOf[HeartbeatNode].totalBeatsReceived should be(1)
 
     for (i <- 0 until 3) {
       node ! Beat
     }
-    node.underlyingActor.asInstanceOf[HeartbeatNode].received should be(4)
+    node.underlyingActor.asInstanceOf[HeartbeatNode].totalBeatsReceived should be(4)
   }
 
   it should "return stats on GetHeartbeatStats message" in {
