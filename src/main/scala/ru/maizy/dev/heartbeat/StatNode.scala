@@ -12,7 +12,7 @@ import akka.routing.{ BroadcastPool, Broadcast, AddRoutee, RemoveRoutee, ActorRe
 
 /** messages */
 case object Beat
-case object GetHeartbeatStats
+case object GetStats
 case object BroadcastBeat
 case class ChangeBeatsDelay(newDelay: FiniteDuration)
 
@@ -21,15 +21,15 @@ case class RemoveSibling(node: ActorRef)
 // case object GetSiblings  //TODO
 
 /** data */
-case class HeartbeatStats(totalBeatsReceived: BigInt)
+case class Stats(totalBeatsReceived: BigInt)
 
 
-class HeartbeatNode
+class StatNode
     extends Actor
     with ActorLogging {
 
-  val printer = context.actorOf(Props[HeartbeatStatsPrinter], "printer")
-  val siblingNodesPool = context.actorOf(BroadcastPool(0).props(Props[HeartbeatNode]), "siblings-pool")
+  val printer = context.actorOf(Props[StatsPrinter], "printer")
+  val siblingNodesPool = context.actorOf(BroadcastPool(0).props(Props[StatNode]), "siblings-pool")
   
   var beatsDelay: FiniteDuration = 100.millis
   var lastSchedule: Option[Cancellable] = None
@@ -52,9 +52,10 @@ class HeartbeatNode
       totalBeatsReceived += 1
       printer ! countStats
 
-    case GetHeartbeatStats => sender ! countStats
+    case GetStats => sender ! countStats
 
     case BroadcastBeat =>
+      log.debug("beat")
       siblingNodesPool ! Broadcast(Beat)
       scheduleNextBeat()
 
@@ -77,7 +78,7 @@ class HeartbeatNode
     cancelNextBeat()
   }
 
-  private def countStats(): HeartbeatStats = HeartbeatStats(totalBeatsReceived)  // TODO
+  private def countStats(): Stats = Stats(totalBeatsReceived)  // TODO
 
   private def scheduleNextBeat(): Cancellable = {
     val schedule = context.system.scheduler.scheduleOnce(beatsDelay, self, BroadcastBeat)
