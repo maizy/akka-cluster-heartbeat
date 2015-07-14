@@ -7,10 +7,10 @@ import akka.actor.{ ActorSystem, Props }
 import akka.testkit.{ ImplicitSender, TestKit, TestActorRef }
 import org.scalatest.{ FlatSpecLike, Matchers }
 
-import ru.maizy.dev.heartbeat.{ HeartbeatStats, GetHeartbeatStats, HeartbeatNode, Beat }
+import ru.maizy.dev.heartbeat.{ Stats, GetStats, StatNode, Beat }
 
-class HeartbeatNodeSpec
-    extends TestKit(ActorSystem("testHeartbeatNode"))
+class StatNodeSpec
+    extends TestKit(ActorSystem("testStatNode"))
     with FlatSpecLike
     with Matchers
     with ImplicitSender
@@ -18,26 +18,26 @@ class HeartbeatNodeSpec
 {
 
   "HeartbeatNode" should "increase counter on receive beat" in {
-    val node = TestActorRef(Props[HeartbeatNode])
-    node.underlyingActor.asInstanceOf[HeartbeatNode].totalBeatsReceived should be(0)
+    val node = TestActorRef(Props[StatNode])
+    node.underlyingActor.asInstanceOf[StatNode].totalBeatsReceived should be(0)
 
     node ! Beat
-    node.underlyingActor.asInstanceOf[HeartbeatNode].totalBeatsReceived should be(1)
+    node.underlyingActor.asInstanceOf[StatNode].totalBeatsReceived should be(1)
 
     for (i <- 0 until 3) {
       node ! Beat
     }
-    node.underlyingActor.asInstanceOf[HeartbeatNode].totalBeatsReceived should be(4)
+    node.underlyingActor.asInstanceOf[StatNode].totalBeatsReceived should be(4)
   }
 
   it should "return stats on GetHeartbeatStats message" in {
-    val node = TestActorRef(Props[HeartbeatNode])
+    val node = TestActorRef(Props[StatNode])
     for (i <- 0 until 5) {
       node ! Beat
     }
 
-    node ! GetHeartbeatStats
-    expectMsg(HeartbeatStats(5))
+    node ! GetStats
+    expectMsg(Stats(5))
   }
 
 }

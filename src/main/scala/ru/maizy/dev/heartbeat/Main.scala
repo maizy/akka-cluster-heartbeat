@@ -13,7 +13,15 @@ import akka.util.Timeout
  */
 object Main extends App {
 
-  val config = ConfigFactory.load()
+  val opts = new Opts(args)
+  opts.afterInit()
+  val additionalConfig = s"""
+     akka.remote.netty.tcp = {
+       port=${opts.port()}
+       hostname=${opts.host()}
+     }
+    """
+  val config = ConfigFactory.parseString(additionalConfig).withFallback(ConfigFactory.load())
 
   implicit val system = ActorSystem("heartbeat", config)
 
@@ -24,14 +32,17 @@ object Main extends App {
 
   //Emulate nodes events
 
-  def emulateEventSeq(events: List[() => Any], _n: Int = 0): Unit = events match {
+  def emulateEventSeq(events: List[() => Any], _n: Int = 0, autoShutdown: Boolean = false): Unit = events match {
     case event :: tail =>
       system.log.info(s"emulate event #${_n}")
       event()
       system.scheduler.scheduleOnce(10.second)(emulateEventSeq(tail, _n + 1))
     case _ =>
-      system.log.info("no more events to emulate, wait for 10 seconds and shutdown")
-      system.scheduler.scheduleOnce(10.second)(system.shutdown())
+      system.log.info("no more events to emulate")
+      if (autoShutdown) {
+        system.log.info("wait for 10 seconds and shutdown")
+        system.scheduler.scheduleOnce(10.second)(system.shutdown _)
+      }
   }
 
   val reportError: PartialFunction[Throwable, Unit] = {
@@ -46,12 +57,12 @@ object Main extends App {
   val events = List(
     () => {
       system.log.info("EVENT: add node1")
-      system.actorOf(Props(new HeartbeatNode(2.second)), "node1")
+      system.actorOf(Props(new StatNode(2.second)), "node1")
     },
     () => {
       system.log.info("EVENT: add node2, connect nodes")
       for (node1 <- system.actorSelection("user/node1").resolveOne) {
-        val node2 = system.actorOf(Props(new HeartbeatNode(2.second)), "node2")
+        val node2 = system.actorOf(Props(new StatNode(2.second)), "node2")
         node2 ! AddSibling(node1)
         node1 ! AddSibling(node2)
       }
@@ -72,7 +83,7 @@ object Main extends App {
         node1 <- system.actorSelection("user/node1").resolveOne;
         node2 <- system.actorSelection("user/node2").resolveOne
       ) {
-        val node3 = system.actorOf(Props(new HeartbeatNode(1.second)), "node3")
+        val node3 = system.actorOf(Props(new StatNode(1.second)), "node3")
         node2 ! AddSibling(node3)
         node1 ! AddSibling(node3)
         node3 ! AddSibling(node1)
@@ -109,5 +120,7 @@ object Main extends App {
     }
   )
 
-  emulateEventSeq(events)
+  val onlyCreateOneNode = events take 1
+  //emulateEventSeq(events, autoShutdown = true)
+  //emulateEventSeq(onlyCreateOneNode)
 }
