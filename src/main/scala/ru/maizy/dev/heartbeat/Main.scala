@@ -16,13 +16,18 @@ object Main extends App {
     case None => System.exit(2)
 
     case Some(options) =>
-      println(options)
-      val additionalConfig = s"""
+      var additionalConfig = s"""
          akka.remote.netty.tcp = {
            port=${options.port}
            hostname=${options.host}
          }
         """
+
+      if (options.mode == Modes.Emulator) {
+        println("Force using akka.provider = akka.actor.LocalActorRefProvider")
+        additionalConfig += "akka.provider = \"akka.actor.LocalActorRefProvider\""
+      }
+
       val config = ConfigFactory.parseString(additionalConfig).withFallback(ConfigFactory.load())
 
       implicit val system = ActorSystem("main", config)
@@ -30,7 +35,7 @@ object Main extends App {
       implicit val defaultTimeout = Timeout(500.millis) //TODO: from config
 
       options.mode match {
-        case Modes.Emulator => EventEmulator.emulateSample1()
+        case Modes.Emulator => EventEmulator.emulate(options.program.get)  //program always exits for that comand
         case Modes.Production => println("start here!")
         case _ => System.exit(1)
       }

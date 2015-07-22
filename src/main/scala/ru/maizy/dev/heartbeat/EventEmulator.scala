@@ -118,11 +118,13 @@ object EventEmulator {
         }
       })
 
-  def emulateSample1()(implicit system: ActorSystem) {
-    new EventEmulator(autoShutdown = true) emulate sample1
-  }
 
-  def emulateOneStatNode()(implicit system: ActorSystem): Unit = {
-    new EventEmulator emulate (sample1 take 1)
-  }
+  def emulate(program: EmulatorProgram.Program)(implicit system: ActorSystem): Unit =
+      program match {
+        case EmulatorProgram.ThreeStatNodes =>
+          new EventEmulator(autoShutdown = true) emulate sample1
+
+        case EmulatorProgram.OneStatNode =>
+          new EventEmulator emulate (sample1 take 1)
+      }
 }
