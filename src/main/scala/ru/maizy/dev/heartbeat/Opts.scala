@@ -49,22 +49,18 @@ object OptionParser {
     head("akka-cluster-heartbeat", Version.toString)
     help("help")
     version("version")
-
-    (opt[Int]('p', "port")
-      required()
-      action { (value, c) => c.copy(port = value) }
-    )
-
-    (opt[String]('h', "host")
-      action { (value, c) => c.copy(host = value) }
-    )
+    opt[String]('h', "host") action { (value, c) => c.copy(host = value) }
 
     (cmd("node")
       action { (_, c) => c.copy(mode = Modes.Production) }
       text { "production mode (add node to cluster)" }
       children(
+        opt[Int]('p', "port")
+          required()
+          action { (value, c) => c.copy(port = value) },
 
         opt[String]('r', "role")
+          required()
           valueName enumValues(Roles)
           validate { inEnum(Roles, _) }
           action { (value, c) => c.copy(role = Roles.valuesMap.get(value)) },
@@ -79,7 +75,12 @@ object OptionParser {
       action { (_, c) => c.copy(mode = Modes.Emulator) }
       text { "emulator mode" }
       children(
-        opt[String]('p', "program")
+
+        opt[Int]('p', "port")
+          action { (value, c) => c.copy(port = value) },
+
+        opt[String]('r', "program")
+          required()
           valueName enumValues(EmulatorProgram)
           validate { inEnum(EmulatorProgram, _) }
           action { (value, c) => c.copy(program = EmulatorProgram.valuesMap.get(value)) }
