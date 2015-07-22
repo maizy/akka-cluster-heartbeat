@@ -19,14 +19,15 @@ scalacOptions ++= Seq(
 )
 
 resolvers ++=Seq(
-  "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
+  "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
+  Resolver.sonatypeRepo("public")
 )
 
 libraryDependencies ++= {
   val akkaVersion = "2.3.12"
   Seq(
     "ch.qos.logback" % "logback-classic" % "1.1.3",
-    "org.rogach" %% "scallop" % "0.9.5",
+    "com.github.scopt" %% "scopt" % "3.3.0",
     "com.typesafe.akka" %% "akka-actor" % akkaVersion,
     "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
     "com.typesafe.akka" %% "akka-remote" % akkaVersion,

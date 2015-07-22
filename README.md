@@ -6,7 +6,7 @@ Trying to implement minimal akka cluster app with a simple purpose.
 
 ```
 cd akka-cluster-heartbeat
-sbt -Dlogback.configurationFile=dev-configs/logback-dev.xml -Dconfig.file=dev-configs/dev.conf run
+sbt 'run cmd --option'
 ```
 
 
@@ -19,24 +19,37 @@ sbt assembly
 ```
 
 
-### Launch node
+### Usage
 
 ```
-java -jar target/scala-2.11/akka-cluster-heartbeat-assembly-*.jar
+java -jar target/scala-2.11/akka-cluster-heartbeat-assembly-*.jar COMMAND [OPTIONS]
 ```
-**TODO**
 
+Commands:
+* node - work with cluster node
+* emulator - start emulator
+
+For options see `java -jar akka-cluster-heartbeat-assembly.jar --help`
+
+### Start cluster
+
+```
+java -jar akka-cluster-heartbeat-assembly.jar node --port 2550
+```
 
 ### Add node
 
-**TODO**
-
+```
+java -jar akka-cluster-heartbeat-assembly.jar node --port 2551 --role stat
+```
 
 ### Remove node
 
 **TODO**
 
 
-## Licence
+## License
 
 MIT
+
+See [LICENSE.txt](LICENSE.txt) for details.

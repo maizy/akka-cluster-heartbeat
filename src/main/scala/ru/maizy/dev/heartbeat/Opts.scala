@@ -1,44 +1,92 @@
 package ru.maizy.dev.heartbeat
 
-import org.rogach.scallop.ScallopConf
+/**
+ * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
+ * See LICENSE.txt for details.
+ */
 
-object Roles extends Enumeration {
+object Roles extends Enumeration with EnumerationMap {
   type Role = Value
   val No = Value("no")
   val Stat = Value("stat")
   val Frontend = Value("frontend")
 }
 
-/**
- * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
- * See LICENSE.txt for details.
- */
-class Opts(args: Seq[String]) extends ScallopConf(args) {
+object Modes extends Enumeration with EnumerationMap {
+  type Mode = Value
+  val Production = Value("production")
+  val Emulator = Value("emulator")
+}
 
-  // TODO: use separate command for every role ex `stat -a 8`
+case class Options(
+    mode: Modes.Mode = Modes.Emulator,
+    port: Int = 2550,
+    host: String = "127.0.0.1",
 
-  lazy val role = opt[String](
-    required = true,
-    default = Some("stat"),
-    descr = "node role",
-    argName = "stat|frontend",
-    validate = { v => Roles.values.map(_.toString) contains v })
+    //production mode
+    role: Option[Roles.Value] = None,
+    statsByNode: Option[Int] = None,
 
-  lazy val statsByNode = opt[Int](
-    default = Some(2),
-    descr = "amount of stat actors created in one stat node"
-  )
+    //emulator mode
+    program: Option[EmulatorProgram.Value] = None
+)
 
-  lazy val port = opt[Int](
-    required = true,
-    validate = { _ <= 65535 }
-  )
+object OptionParser {
 
-  lazy val host = opt[String](
-    required = true,
-    default = Some("127.0.0.1")
-  )
+  private val parser = new scopt.OptionParser[Options]("akka-cluster-heartbeat") {
+    override def showUsageOnError = true
+    
+    private def inEnum(enum: EnumerationMap, value: String) =
+      if (enum.valuesMap.contains(value)) {
+        success
+      } else {
+        val allowed = enum.valuesMap.keys
+        failure(s"Value '$value' not in allowed values list (${allowed.mkString(", ")})")
+      }
 
-  lazy val roleValue = Roles.values.find(_.toString == role()).get
+    private def enumValues(enum: EnumerationMap) = enum.valuesMap.keys.mkString("|")
 
+    head("akka-cluster-heartbeat", Version.toString)
+    help("help")
+    version("version")
+
+    (opt[Int]('p', "port")
+      required()
+      action { (value, c) => c.copy(port = value) }
+    )
+
+    (opt[String]('h', "host")
+      action { (value, c) => c.copy(host = value) }
+    )
+
+    (cmd("node")
+      action { (_, c) => c.copy(mode = Modes.Production) }
+      text { "production mode (add node to cluster)" }
+      children(
+
+        opt[String]('r', "role")
+          valueName enumValues(Roles)
+          validate { inEnum(Roles, _) }
+          action { (value, c) => c.copy(role = Roles.valuesMap.get(value)) },
+
+        opt[Int]('s', "stats-by-node")
+          validate { v => if (v < 0) failure("should be great than 0") else success }
+          action { (value, c) => c.copy(statsByNode = Some(value)) }
+      )
+    )
+
+    (cmd("emulator")
+      action { (_, c) => c.copy(mode = Modes.Emulator) }
+      text { "emulator mode" }
+      children(
+        opt[String]('p', "program")
+          valueName enumValues(EmulatorProgram)
+          validate { inEnum(EmulatorProgram, _) }
+          action { (value, c) => c.copy(program = EmulatorProgram.valuesMap.get(value)) }
+      )
+    )
+  }
+
+  def parse(args: Seq[String]): Option[Options] =
+    parser.parse(args, Options())
 }
