@@ -3,6 +3,7 @@ package ru.maizy.dev.heartbeat
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+import akka.cluster.Cluster
 import akka.actor.ActorSystem
 import akka.util.Timeout
 
@@ -23,24 +24,45 @@ object Main extends App {
          }
         """
 
-      if (options.mode == Modes.Emulator) {
-        println("Force using akka.provider = akka.actor.LocalActorRefProvider")
-        additionalConfig += "akka.provider = \"akka.actor.LocalActorRefProvider\""
+      options.mode match {
+        case Modes.Emulator =>
+          println("Force using akka.provider = akka.actor.LocalActorRefProvider")
+          additionalConfig += "akka.provider = \"akka.actor.LocalActorRefProvider\""
+
+        case Modes.Production =>
+          val roleStr = options.role.get.toString //role always exists for that mode
+          additionalConfig += "akka.cluster.roles = [\""+ roleStr +"\"]"
       }
 
       val config = ConfigFactory.parseString(additionalConfig).withFallback(ConfigFactory.load())
 
       implicit val system = ActorSystem("main", config)
+      val logger = system.log
       implicit val executionContext = system.dispatcher
       implicit val defaultTimeout = Timeout(500.millis) //TODO: from config
 
       options.mode match {
         case Modes.Emulator => EventEmulator.emulate(options.program.get)  //program always exits for that comand
-        case Modes.Production => println("start here!")
-        case _ => System.exit(1)
+        case Modes.Production =>
+          val cluster = Cluster(system)
+          var roleHandler: Option[role.RoleHandler] = None
+          cluster.selfRoles.foreach {
+            case "stat" =>
+              roleHandler = Some(new role.StatBase())
+          }
+
+          roleHandler.foreach { h =>
+            h.startUp(system, cluster)
+          }
+
+        case _ =>
+          logger.error("Unsupported role, exiting")
+          system.shutdown()
       }
 
-
+      system.registerOnTermination {
+        System.exit(0)
+      }
 
   }
 }

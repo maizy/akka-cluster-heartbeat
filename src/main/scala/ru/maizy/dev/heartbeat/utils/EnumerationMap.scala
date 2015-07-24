@@ -1,4 +1,4 @@
-package ru.maizy.dev.heartbeat
+package ru.maizy.dev.heartbeat.utils
 
 /**
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015

@@ -5,14 +5,14 @@ package ru.maizy.dev.heartbeat
  * See LICENSE.txt for details.
  */
 
-object Roles extends Enumeration with EnumerationMap {
+object Roles extends Enumeration with utils.EnumerationMap {
   type Role = Value
   val No = Value("no")
   val Stat = Value("stat")
   val Frontend = Value("frontend")
 }
 
-object Modes extends Enumeration with EnumerationMap {
+object Modes extends Enumeration with utils.EnumerationMap {
   type Mode = Value
   val Production = Value("production")
   val Emulator = Value("emulator")
@@ -36,7 +36,7 @@ object OptionParser {
   private val parser = new scopt.OptionParser[Options]("akka-cluster-heartbeat") {
     override def showUsageOnError = true
     
-    private def inEnum(enum: EnumerationMap, value: String) =
+    private def inEnum(enum: utils.EnumerationMap, value: String) =
       if (enum.valuesMap.contains(value)) {
         success
       } else {
@@ -44,7 +44,7 @@ object OptionParser {
         failure(s"Value '$value' not in allowed values list (${allowed.mkString(", ")})")
       }
 
-    private def enumValues(enum: EnumerationMap) = enum.valuesMap.keys.mkString("|")
+    private def enumValues(enum: utils.EnumerationMap) = enum.valuesMap.keys.mkString("|")
 
     head("akka-cluster-heartbeat", Version.toString)
     help("help")

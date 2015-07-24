@@ -1,14 +1,16 @@
-package ru.maizy.dev.heartbeat
-
-import scala.concurrent.duration._
-import akka.actor.{ ActorRef, Props, Actor, ActorLogging, Cancellable }
-import akka.event.LoggingReceive
-import akka.routing.{ BroadcastPool, Broadcast, AddRoutee, RemoveRoutee, ActorRefRoutee }
+package ru.maizy.dev.heartbeat.actor
 
 /**
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
  * See LICENSE.txt for details.
  */
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, Cancellable, Props }
+import akka.event.LoggingReceive
+import akka.routing.{ ActorRefRoutee, AddRoutee, Broadcast, BroadcastPool, RemoveRoutee }
+
+import scala.concurrent.duration._
+
 
 /** messages */
 case object Beat
@@ -24,14 +26,14 @@ case class RemoveSibling(node: ActorRef)
 case class Stats(totalBeatsReceived: BigInt)
 
 
-class StatNode
+class Stat
     extends Actor
     with ActorLogging {
 
   val printer = context.actorOf(Props[StatsPrinter], "printer")
-  val siblingNodesPool = context.actorOf(BroadcastPool(0).props(Props[StatNode]), "siblings-pool")
+  val siblingNodesPool = context.actorOf(BroadcastPool(0).props(Props[Stat]), "siblings-pool")
   
-  var beatsDelay: FiniteDuration = 100.millis
+  var beatsDelay: FiniteDuration = 2.seconds
   var lastSchedule: Option[Cancellable] = None
   var totalBeatsReceived: BigInt = 0
 
