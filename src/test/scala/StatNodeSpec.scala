@@ -3,18 +3,16 @@
  * See LICENSE.txt for details.
  */
 
-import akka.actor.{ ActorSystem, Props }
-import akka.testkit.{ ImplicitSender, TestKit, TestActorRef }
+import akka.actor.Props
+import akka.testkit.TestActorRef
 import org.scalatest.{ FlatSpecLike, Matchers }
 import ru.maizy.dev.heartbeat.actor.{ Stats, GetStats, Beat, Stat }
 
 
 class StatNodeSpec
-    extends TestKit(ActorSystem("testStatNode"))
+    extends ActorSystemTestCase
     with FlatSpecLike
     with Matchers
-    with ImplicitSender
-    with KillActorSystemAfterAllTests
 {
 
   "HeartbeatNode" should "increase counter on receive beat" in {
