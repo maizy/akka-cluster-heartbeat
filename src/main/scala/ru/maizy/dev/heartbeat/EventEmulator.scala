@@ -48,7 +48,7 @@ class EventEmulator (val autoShutdown: Boolean = false)(implicit system: ActorSy
 
 object EventEmulator {
 
-  implicit val defaultTimeout = Timeout(500.millis)
+  implicit val defaultTimeout = Timeout(500.millis) //TODO
 
   val sample1 = List[ActorSystem => Unit](
       (system: ActorSystem) => {
