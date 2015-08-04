@@ -1,5 +1,10 @@
 package ru.maizy.dev.heartbeat
 
+import java.util.concurrent.atomic.AtomicBoolean
+
+import sun.misc.SignalHandler
+import sun.misc.Signal
+
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
@@ -11,12 +16,26 @@ import akka.util.Timeout
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
  * See LICENSE.txt for details.
  */
-object Main extends App {
-  OptionParser.parse(args) match {
+object Main extends App with SignalHandler {
 
-    case None => System.exit(2)
+  val SIGING = "INT"
+  val SIGTERM = "TERM"
+
+  val UNKNOWN_TERMINATION = 2
+  val OPTIONS_ERROR_TERMINATION = 3
+  val SUCCESS_TERMINATION = 0
+
+  var actorSystem: Option[ActorSystem] = None
+
+  Signal.handle(new Signal(SIGING), this)
+  Signal.handle(new Signal(SIGTERM), this)
+
+  OptionParser.parse(args) match {
+    case None => System.exit(OPTIONS_ERROR_TERMINATION)
 
     case Some(options) =>
+
+      //TODO: do without string parsing
       var additionalConfig = s"""
          akka.remote.netty.tcp = {
            port=${options.port}
@@ -37,6 +56,7 @@ object Main extends App {
       val config = ConfigFactory.parseString(additionalConfig).withFallback(ConfigFactory.load())
 
       implicit val system = ActorSystem("main", config)
+      actorSystem = Some(system)
       val logger = system.log
       implicit val executionContext = system.dispatcher
       implicit val defaultTimeout = Timeout(500.millis) //TODO: from config
@@ -61,8 +81,19 @@ object Main extends App {
       }
 
       system.registerOnTermination {
-        System.exit(0)
+        System.exit(SUCCESS_TERMINATION)
       }
+  }
 
+  val terminated = new AtomicBoolean(false)
+
+  override def handle(signal: Signal): Unit = {
+    if (!terminated.compareAndSet(false, true)) {
+      actorSystem foreach { system =>
+        if (List(SIGING, SIGTERM).contains(signal.getName)) {
+          system.shutdown()
+        }
+      }
+    }
   }
 }
