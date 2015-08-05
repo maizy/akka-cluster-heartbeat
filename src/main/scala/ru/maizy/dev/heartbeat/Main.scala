@@ -1,5 +1,7 @@
 package ru.maizy.dev.heartbeat
 
+import java.util.concurrent.atomic.AtomicBoolean
+
 import sun.misc.SignalHandler
 import sun.misc.Signal
 
@@ -16,90 +18,87 @@ import akka.util.Timeout
  */
 object Main extends App with SignalHandler {
 
+  /* USAGE:
+
+    sbt assembly
+    # hook version:
+    java -jar target/scala-2.11/akka-cluster-heartbeat-assembly-0.1.jar hook
+    # signal version:
+    java -jar  target/scala-2.11/akka-cluster-heartbeat-assembly-0.1.jar signal
+
+    # then in other shell session
+    # find PID, ex 12345
+    jps -m | grep akka
+
+    # send signals
+    kill -TERM 12345
+    # or
+    kill -INT 12345
+
+    # back to shell with java ..., get exit code value
+    echo $?
+   */
+
   val SIGING = "INT"
   val SIGTERM = "TERM"
 
-  val UNKNOWN_TERMINATION = 2
-  val OPTIONS_ERROR_TERMINATION = 3
-  val ERROR_TERMINATION = 1
-  val SUCCESS_TERMINATION = 0
-
-  var actorSystem: Option[ActorSystem] = None
-
-  //Signal.handle(new Signal(SIGING), this)
-  //Signal.handle(new Signal(SIGTERM), this)
-
-  OptionParser.parse(args) match {
-    case None => System.exit(OPTIONS_ERROR_TERMINATION)
-
-    case Some(options) =>
-
-      //TODO: do without string parsing
-      var additionalConfig = s"""
-         akka.remote.netty.tcp = {
-           port=${options.port}
-           hostname=${options.host}
-         }
-        """
-
-      options.mode match {
-        case Modes.Emulator =>
-          println("Force using akka.provider = akka.actor.LocalActorRefProvider")
-          additionalConfig += "akka.provider = \"akka.actor.LocalActorRefProvider\""
-
-        case Modes.Production =>
-          val roleStr = options.role.get.toString //role always exists for that mode
-          additionalConfig += "akka.cluster.roles = [\""+ roleStr +"\"]"
-      }
-
-      val config = ConfigFactory.parseString(additionalConfig).withFallback(ConfigFactory.load())
-
-      implicit val system = ActorSystem("main", config)
-      actorSystem = Some(system)
-      val logger = system.log
-      implicit val executionContext = system.dispatcher
-      implicit val defaultTimeout = Timeout(500.millis) //TODO: from config
-
-      options.mode match {
-        case Modes.Emulator => EventEmulator.emulate(options.program.get)  //program always exits for that comand
-        case Modes.Production =>
-          val cluster = Cluster(system)
-          var roleHandler: Option[role.RoleHandler] = None
-          cluster.selfRoles.foreach {
-            case "stat" =>
-              roleHandler = Some(new role.StatBase())
-          }
-
-          roleHandler.foreach { h =>
-            h.startUp(system, cluster)
-          }
-
-        case _ =>
-          logger.error("Unsupported role, exiting")
-          system.shutdown()
-      }
-
-      system.registerOnTermination {
-        //System.exit(SUCCESS_TERMINATION)
-      }
-
-      scala.sys.addShutdownHook(scala.sys.ShutdownHookThread {
-        actorSystem foreach(_.shutdown())
-        System.exit(0)
-      })
+  val mode = args.toList match {
+    case x :: _ => x
+    case _ => "signal"
   }
 
-  var terminated = true //FIXME
+  println(s"Mode: $mode")
 
-  override def handle(signal: Signal): Unit = {
-    if (!terminated) {
-      terminated = true
-      actorSystem match {
-        case Some(system) if List(SIGING, SIGTERM).contains(signal.getName) =>
-          system.shutdown()
-        case _ =>
-          System.exit(UNKNOWN_TERMINATION)
+  if (mode == "signal") {
+    println("register signal handlers")
+    Signal.handle(new Signal(SIGING), this)
+    Signal.handle(new Signal(SIGTERM), this)
+  }
+
+  val config = ConfigFactory.load()
+
+  val system = ActorSystem("main", config)
+  val logger = system.log
+  implicit val executionContext = system.dispatcher
+  implicit val defaultTimeout = Timeout(500.millis)
+  val cluster = Cluster(system)
+
+  //akka hook
+  system.registerOnTermination {
+    println("akka system terminated, return exit code = 0")
+    System.exit(0)
+  }
+
+  val terminated = new AtomicBoolean(false)
+
+  // вариант 1
+  if (mode == "hook") {
+    scala.sys.addShutdownHook {
+      if (terminated.compareAndSet(false, true)) {
+        println("Shutdown hook")
+        system.shutdown() // это работает, ActorSystem аккуратно тормозит, но не ставиться exit code = 0
+        // System.exit(0) // это тоже не работает о_0
+                          // exit code после sigint = 130, sigterm = 146
+      } else {
+        println("Terminated before")
       }
+    }
+  }
+
+
+  // вариант 2
+  override def handle(signal: Signal): Unit = {
+    println(s"Signal received - ${signal.getName}")
+    if (!terminated.get()) {
+      println(s"Signal processed - ${signal.getName}")
+      if (terminated.compareAndSet(false, true) && List(SIGING, SIGTERM).contains(signal.getName)) {
+        println("call system.shutdown()")
+        system.shutdown()
+        // System.exit(2) // так можно, но system.shutdown тоже верно отработает
+                          // и вызовет registerOnTermination, который и сам поставит exit code
+      }
+    } else {
+      println("Terminated before")
     }
   }
 }
