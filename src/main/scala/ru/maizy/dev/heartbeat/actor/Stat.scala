@@ -20,31 +20,29 @@ case class ChangeBeatsDelay(newDelay: FiniteDuration)
 
 case class AddSibling(node: ActorRef)
 case class RemoveSibling(node: ActorRef)
-// case object GetSiblings  //TODO
+// case object GetSiblings  // TODO
 
 /** data */
 case class Stats(totalBeatsReceived: BigInt)
 
 
-class Stat
-    extends Actor
-    with ActorLogging {
+class Stat extends Actor with ActorLogging {
 
   val printer = context.actorOf(Props[StatsPrinter], "printer")
   val siblingNodesPool = context.actorOf(BroadcastPool(0).props(Props[Stat]), "siblings-pool")
-  
+
   var beatsDelay: FiniteDuration = 2.seconds
   var lastSchedule: Option[Cancellable] = None
   var totalBeatsReceived: BigInt = 0
 
   import context.dispatcher
 
-  def this(initialDelay: FiniteDuration) {
+  def this(initialDelay: FiniteDuration) = {
     this()
     beatsDelay = initialDelay
   }
 
-  override def preStart() {
+  override def preStart(): Unit = {
     scheduleNextBeat()
   }
 
@@ -66,7 +64,7 @@ class Stat
       cancelNextBeat()
       beatsDelay = newDelay
       scheduleNextBeat()
-      
+
     case AddSibling(node: ActorRef) =>
       log.info(s"add sibling ${node.path}")
       siblingNodesPool ! AddRoutee(ActorRefRoutee(node))
@@ -76,7 +74,7 @@ class Stat
       siblingNodesPool ! RemoveRoutee(ActorRefRoutee(node))
   }
 
-  override def postStop() {
+  override def postStop(): Unit = {
     cancelNextBeat()
   }
 
@@ -87,7 +85,7 @@ class Stat
     lastSchedule = Some(schedule)
     schedule
   }
-  
+
   private def cancelNextBeat(): Unit = {
     lastSchedule.foreach(_.cancel())
     lastSchedule = None

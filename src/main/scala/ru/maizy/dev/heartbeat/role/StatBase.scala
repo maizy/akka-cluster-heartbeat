@@ -15,7 +15,7 @@ class StatBase extends RoleHandler {
 
   override def startUp(system: ActorSystem, cluster: Cluster): Unit = {
     val ref = system.actorOf(Props[Supervisor], name = "supervisor")
-    ref ! StartUp(2) //FIXME: from options
+    ref ! StartUp(2) // FIXME: from options
     supervisor = Some(ref)
   }
 

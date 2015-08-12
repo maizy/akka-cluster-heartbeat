@@ -36,3 +36,7 @@ libraryDependencies ++= {
     "org.scalatest" %% "scalatest" % "2.2.0" % "test"
   )
 }
+
+lazy val testScalastyle = taskKey[Unit]("testScalastyle")
+testScalastyle := org.scalastyle.sbt.ScalastylePlugin.scalastyle.in(Test).toTask("").value
+(test in Test) <<= (test in Test) dependsOn testScalastyle

@@ -13,7 +13,7 @@ class StatsPrinter extends Actor {
 
   val log = Logging(context.system, this)
 
-  def receive = {
+  def receive: Receive = {
     case s: Stats =>
       log.info(s"${sender().path.name} => beats: ${s.totalBeatsReceived}")
   }

@@ -10,8 +10,8 @@ import akka.cluster.Cluster
  */
 trait RoleHandler {
 
-  def startUp(system: ActorSystem, cluster: Cluster) {}
-  def join(system: ActorSystem, cluster: Cluster) {}
-  def leave(system: ActorSystem, cluster: Cluster) {}
-  def beforeShutdown(system: ActorSystem) {}
+  def startUp(system: ActorSystem, cluster: Cluster): Unit = {}
+  def join(system: ActorSystem, cluster: Cluster): Unit = {}
+  def leave(system: ActorSystem, cluster: Cluster): Unit = {}
+  def beforeShutdown(system: ActorSystem): Unit = {}
 }

@@ -35,12 +35,12 @@ object Main extends App with SignalHandler {
 
     case Some(options) =>
 
-      //TODO: do without string parsing
+      // TODO: do without string parsing
       var additionalConfig = s"""
-         akka.remote.netty.tcp = {
-           port=${options.port}
-           hostname=${options.host}
-         }
+        akka.remote.netty.tcp = {
+          port=${options.port}
+          hostname=${options.host}
+        }
         """
 
       options.mode match {
@@ -49,7 +49,7 @@ object Main extends App with SignalHandler {
           additionalConfig += "akka.provider = \"akka.actor.LocalActorRefProvider\""
 
         case Modes.Production =>
-          val roleStr = options.role.get.toString //role always exists for that mode
+          val roleStr = options.role.get.toString  // role always exists for that mode
           additionalConfig += "akka.cluster.roles = [\""+ roleStr +"\"]"
       }
 
@@ -59,10 +59,10 @@ object Main extends App with SignalHandler {
       actorSystem = Some(system)
       val logger = system.log
       implicit val executionContext = system.dispatcher
-      implicit val defaultTimeout = Timeout(500.millis) //TODO: from config
+      implicit val defaultTimeout = Timeout(500.millis)  // TODO: from config
 
       options.mode match {
-        case Modes.Emulator => EventEmulator.emulate(options.program.get)  //program always exits for that comand
+        case Modes.Emulator => EventEmulator.emulate(options.program.get)  // program always exits for that comand
         case Modes.Production =>
           val cluster = Cluster(system)
           var roleHandler: Option[role.RoleHandler] = None

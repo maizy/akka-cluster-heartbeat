@@ -23,11 +23,11 @@ case class Options(
     port: Int = 2550,
     host: String = "127.0.0.1",
 
-    //production mode
+    // production mode
     role: Option[Roles.Value] = None,
     statsByNode: Option[Int] = None,
 
-    //emulator mode
+    // emulator mode
     program: Option[EmulatorProgram.Value] = None
 )
 
@@ -35,7 +35,7 @@ object OptionParser {
 
   private val parser = new scopt.OptionParser[Options]("akka-cluster-heartbeat") {
     override def showUsageOnError = true
-    
+
     private def inEnum(enum: utils.EnumerationMap, value: String) =
       if (enum.valuesMap.contains(value)) {
         success

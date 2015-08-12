@@ -1,6 +1,6 @@
 package ru.maizy.dev.heartbeat
 
-//TODO: autogenerate on build
+// TODO: autogenerate on build
 
 /**
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
