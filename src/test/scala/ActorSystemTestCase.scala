@@ -8,10 +8,11 @@ import org.scalatest.Suite
  * See LICENSE.txt for details.
  */
 abstract class ActorSystemTestCase(system: ActorSystem)
-    extends TestKit(system)
-    with Suite
-    with ImplicitSender
-    with KillActorSystemAfterAllTests {
+  extends TestKit(system)
+  with Suite
+  with ImplicitSender
+  with KillActorSystemAfterAllTests
+{
 
   def this() = {
     this(ActorSystem("TestCase", ConfigFactory.parseString(

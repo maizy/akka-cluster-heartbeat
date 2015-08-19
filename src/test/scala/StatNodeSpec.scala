@@ -10,9 +10,9 @@ import ru.maizy.dev.heartbeat.actor.{ Stats, GetStats, Beat, Stat }
 
 
 class StatNodeSpec
-    extends ActorSystemTestCase
-    with FlatSpecLike
-    with Matchers
+  extends ActorSystemTestCase
+  with FlatSpecLike
+  with Matchers
 {
 
   "HeartbeatNode" should "increase counter on receive beat" in {

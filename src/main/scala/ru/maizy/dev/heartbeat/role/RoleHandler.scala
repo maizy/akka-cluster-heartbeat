@@ -9,9 +9,5 @@ import akka.cluster.Cluster
  * See LICENSE.txt for details.
  */
 trait RoleHandler {
-
   def startUp(system: ActorSystem, cluster: Cluster): Unit = {}
-  def join(system: ActorSystem, cluster: Cluster): Unit = {}
-  def leave(system: ActorSystem, cluster: Cluster): Unit = {}
-  def beforeShutdown(system: ActorSystem): Unit = {}
 }

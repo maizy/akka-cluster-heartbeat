@@ -18,6 +18,10 @@ scalacOptions ++= Seq(
   "-Xlint"
 )
 
+fork in run := true
+
+connectInput in run := true
+
 resolvers ++=Seq(
   "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
   Resolver.sonatypeRepo("public")

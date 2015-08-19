@@ -1,26 +1,26 @@
 package ru.maizy.dev.heartbeat
 
-import java.util.concurrent.atomic.AtomicBoolean
+/**
+ * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
+ * See LICENSE.txt for details.
+ */
 
+import java.util.concurrent.atomic.AtomicBoolean
 import sun.misc.SignalHandler
 import sun.misc.Signal
-
 import scala.concurrent.duration._
-
 import com.typesafe.config.ConfigFactory
 import akka.cluster.Cluster
 import akka.actor.ActorSystem
 import akka.util.Timeout
 
-/**
- * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
- * See LICENSE.txt for details.
- */
+
 object Main extends App with SignalHandler {
 
   val SIGING = "INT"
   val SIGTERM = "TERM"
 
+  val terminated = new AtomicBoolean(false)
   val UNKNOWN_TERMINATION = 2
   val OPTIONS_ERROR_TERMINATION = 3
   val SUCCESS_TERMINATION = 0
@@ -68,7 +68,7 @@ object Main extends App with SignalHandler {
           var roleHandler: Option[role.RoleHandler] = None
           cluster.selfRoles.foreach {
             case "stat" =>
-              roleHandler = Some(new role.StatBase())
+              roleHandler = Some(new role.Stat())
           }
 
           roleHandler.foreach { h =>
@@ -85,15 +85,17 @@ object Main extends App with SignalHandler {
       }
   }
 
-  val terminated = new AtomicBoolean(false)
-
   override def handle(signal: Signal): Unit = {
-    if (!terminated.compareAndSet(false, true)) {
+    actorSystem foreach {_.log.debug(s"recieve signal ${signal.getName}")}
+    if (terminated.compareAndSet(false, true)) {
       actorSystem foreach { system =>
         if (List(SIGING, SIGTERM).contains(signal.getName)) {
+          actorSystem foreach {_.log.debug(s"handle signal")}
           system.shutdown()
         }
       }
+    } else {
+      actorSystem foreach {_.log.debug(s"ever terminated, skip")}
     }
   }
 }
