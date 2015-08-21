@@ -55,7 +55,7 @@ class BaseSupervisor extends Actor with ActorLogging {
       }
 
       selector onFailure {
-        case e => log.debug(s"Unable to select supervisor on member $member: $e")
+        case e: Throwable => log.debug(s"Unable to select supervisor on member $member: $e")
       }
 
     case MemberExited(member) => getStatMemberSupervisor(member) foreach {
@@ -77,7 +77,7 @@ class BaseSupervisor extends Actor with ActorLogging {
       supervisorsActors --= actors
       log.debug(s"remove ${actors.size} svs, current sv set size: ${supervisorsActors.size}")
 
-    case GetKnownSupervisors => 
+    case GetKnownSupervisors =>
       sender ! KnownSupervisors(supervisorsActors.toList)
   }
 
