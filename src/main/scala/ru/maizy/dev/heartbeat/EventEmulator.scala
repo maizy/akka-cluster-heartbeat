@@ -23,7 +23,7 @@ class EventEmulator (val autoShutdown: Boolean = false)(implicit system: ActorSy
 
   implicit val ec = system.dispatcher
 
-  def emulate(events: List[ActorSystem => Unit]):Unit = {
+  def emulate(events: Seq[ActorSystem => Unit]):Unit = {
 
     def implementation(xs: Seq[ActorSystem => Any], step: Int = 0): Unit =
       xs match {
@@ -51,7 +51,7 @@ object EventEmulator {
 
   implicit val defaultTimeout = Timeout(500.millis) // TODO
 
-  val sample1 = List[ActorSystem => Unit](
+  val sample1 = Seq[ActorSystem => Unit](
     (system: ActorSystem) => {
       system.log.info("EVENT: add node1")
       system.actorOf(Props(new Stat(2.second)), "node1")

@@ -16,8 +16,10 @@ import akka.event.LoggingReceive
 
 
 case class StartUp(amountOfStatNodes: Int)
-case class AddSupervisors(ref: Seq[ActorRef])
-case class RemoveSupervisors(ref: Seq[ActorRef])
+case class AddSupervisors(refs: Seq[ActorRef])
+case class RemoveSupervisors(refs: Seq[ActorRef])
+case object GetKnownSupervisors
+case class KnownSupervisors(refs: Seq[ActorRef])
 
 
 class BaseSupervisor extends Actor with ActorLogging {
@@ -74,6 +76,9 @@ class BaseSupervisor extends Actor with ActorLogging {
     case RemoveSupervisors(actors) =>
       supervisorsActors --= actors
       log.debug(s"remove ${actors.size} svs, current sv set size: ${supervisorsActors.size}")
+
+    case GetKnownSupervisors => 
+      sender ! KnownSupervisors(supervisorsActors.toList)
   }
 
   protected def startUp(amount: Int): Unit = {

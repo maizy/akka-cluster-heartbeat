@@ -89,7 +89,7 @@ object Main extends App with SignalHandler {
     actorSystem foreach {_.log.debug(s"recieve signal ${signal.getName}")}
     if (terminated.compareAndSet(false, true)) {
       actorSystem foreach { system =>
-        if (List(SIGING, SIGTERM).contains(signal.getName)) {
+        if (Seq(SIGING, SIGTERM).contains(signal.getName)) {
           actorSystem foreach {_.log.debug(s"handle signal")}
           system.shutdown()
         }
