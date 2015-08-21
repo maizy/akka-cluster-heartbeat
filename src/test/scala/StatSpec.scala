@@ -5,17 +5,15 @@
 
 import akka.actor.Props
 import akka.testkit.TestActorRef
-import org.scalatest.{ FlatSpecLike, Matchers }
-import ru.maizy.dev.heartbeat.actor.{ Stats, GetStats, Beat, Stat }
+import org.scalatest.FlatSpecLike
+import ru.maizy.dev.heartbeat.actor._
 
-
-class StatNodeSpec
+class StatSpec
   extends ActorSystemTestCase
   with FlatSpecLike
-  with Matchers
 {
 
-  "HeartbeatNode" should "increase counter on receive beat" in {
+  "Stat actor" should "increase counter on receive beat" in {
     val node = TestActorRef(Props[Stat])
     node.underlyingActor.asInstanceOf[Stat].totalBeatsReceived should be(0)
 
