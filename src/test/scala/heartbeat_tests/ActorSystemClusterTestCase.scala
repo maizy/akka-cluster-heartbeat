@@ -1,3 +1,5 @@
+package heartbeat_tests
+
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 

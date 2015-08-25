@@ -1,3 +1,5 @@
+package heartbeat_tests
+
 /**
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
  * See LICENSE.txt for details.
@@ -8,6 +10,7 @@ import akka.actor.Props
 import akka.testkit.TestActorRef
 import org.scalatest.FlatSpecLike
 import ru.maizy.dev.heartbeat.actor._
+
 
 class SupervisorClusterSpec
   extends ActorSystemClusterTestCase

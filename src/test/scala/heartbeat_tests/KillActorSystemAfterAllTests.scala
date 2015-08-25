@@ -1,10 +1,13 @@
+package heartbeat_tests
+
 /**
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
  * See LICENSE.txt for details.
  */
 import scala.concurrent.duration._
 import akka.testkit.TestKit
-import org.scalatest.{BeforeAndAfterAll, Suite}
+import org.scalatest.{ BeforeAndAfterAll, Suite }
+
 
 trait KillActorSystemAfterAllTests extends BeforeAndAfterAll {
 

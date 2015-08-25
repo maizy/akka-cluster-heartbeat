@@ -1,3 +1,5 @@
+package heartbeat_tests
+
 /**
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
  * See LICENSE.txt for details.
