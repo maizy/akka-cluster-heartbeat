@@ -9,7 +9,7 @@ import org.scalatest.{ Matchers, Suite }
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
  * See LICENSE.txt for details.
  */
-abstract class ActorSystemTestCase(system: ActorSystem)
+abstract class ActorSystemBaseSpec(system: ActorSystem)
   extends TestKit(system)
   with Suite
   with ImplicitSender
@@ -19,15 +19,15 @@ abstract class ActorSystemTestCase(system: ActorSystem)
 
   def this() = this(ActorSystem(
     "TestCase",
-    ConfigFactory.parseString(ActorSystemTestCase.akkaConfig)))
+    ConfigFactory.parseString(ActorSystemBaseSpec.akkaConfig)))
 }
 
-object ActorSystemTestCase {
+object ActorSystemBaseSpec {
   def akkaConfig: String =
     """
     akka {
       loggers = ["akka.testkit.TestEventListener"]
-      loglevel = DEBUG
+      loglevel = WARNING
       actor.debug = {
         lifecycle = on
         receive = on

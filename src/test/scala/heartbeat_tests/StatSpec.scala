@@ -11,7 +11,7 @@ import org.scalatest.FlatSpecLike
 import ru.maizy.dev.heartbeat.actor._
 
 class StatSpec
-  extends ActorSystemTestCase
+  extends ActorSystemBaseSpec
   with FlatSpecLike
 {
 

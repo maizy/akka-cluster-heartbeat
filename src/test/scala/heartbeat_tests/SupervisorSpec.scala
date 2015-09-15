@@ -12,12 +12,13 @@ import org.scalatest.FlatSpecLike
 import ru.maizy.dev.heartbeat.actor._
 
 
-class SupervisorClusterSpec
-  extends ActorSystemClusterTestCase
+class SupervisorSpec
+  extends ActorSystemClusterBaseSpec
   with FlatSpecLike
 {
 
   trait TestSupervisors {
+    // blocking tests for underling actor
     val sv1 = TestActorRef(Props[BaseSupervisor])
     val sv2 = TestActorRef(Props[BaseSupervisor])
     val sv3 = TestActorRef(Props[BaseSupervisor])

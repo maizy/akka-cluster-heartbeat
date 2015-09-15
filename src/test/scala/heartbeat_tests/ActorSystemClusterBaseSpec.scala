@@ -7,16 +7,16 @@ import com.typesafe.config.ConfigFactory
  * Copyright (c) Nikita Kovaliov, maizy.ru, 2015
  * See LICENSE.txt for details.
  */
-abstract class ActorSystemClusterTestCase(system: ActorSystem)
-  extends ActorSystemTestCase(system)
+abstract class ActorSystemClusterBaseSpec(system: ActorSystem)
+  extends ActorSystemBaseSpec(system)
 {
   def this() = this(ActorSystem(
     "ClusterTestCase",
-    ConfigFactory.parseString(ActorSystemClusterTestCase.akkaConfig)))
+    ConfigFactory.parseString(ActorSystemClusterBaseSpec.akkaConfig)))
 }
 
-object ActorSystemClusterTestCase {
-  def akkaConfig: String = ActorSystemTestCase.akkaConfig +
+object ActorSystemClusterBaseSpec {
+  def akkaConfig: String = ActorSystemBaseSpec.akkaConfig +
     """
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.netty.tcp {
