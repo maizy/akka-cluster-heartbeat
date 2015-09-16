@@ -1,5 +1,9 @@
-// based on example from akka docs
+// file: src/multi-jvm/scala/SupervisortClusterEventsSpec.scala
+//
+// Required properly multi-jvm setup:
 // http://doc.akka.io/docs/akka/snapshot/scala/cluster-usage.html#How_to_Test
+//
+// based on example from akka docs
 
 import scala.collection.mutable
 import scala.concurrent.duration._
@@ -18,9 +22,9 @@ object SampleDynamicallyChangedClusterSpecConfig extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("thrid")
-  val forth = role("forth")
+  val fourth = role("fourth")
 
-  def nodeList = Seq(first, second, third, forth)
+  def nodeList = Seq(first, second, third, fourth)
 
   // this configuration will be used for all nodes
   // note that no fixed host names and ports are used
@@ -51,6 +55,7 @@ abstract class BaseClusterSpec(config: MultiNodeConfig)
   override def beforeAll() = multiNodeSpecBeforeAll()
 
   override def afterAll() = {
+    enterBarrier("before-clean-up")
     cleanUp()
     enterBarrier("clean-up")
     multiNodeSpecAfterAll()
@@ -65,14 +70,20 @@ abstract class BaseClusterSpec(config: MultiNodeConfig)
 
   def joinToCluster(nodes: Seq[RoleName], seedNode: RoleName): Unit = {
     currentClusterNodes ++= nodes
+    // on new nodes await events for all cluster member
     runOn(nodes: _*) {
       cluster join node(seedNode).address
       (receiveN(currentClusterNodes.size).collect { case MemberUp(member) => member.address }.toSet
-        should be(currentClusterNodes.map(node(_).address).toSet))
+        should contain theSameElementsAs currentClusterNodes.map(node(_).address).toSet)
+    }
+
+    // on existing nodes await events for only new cluster members
+    runOn((currentClusterNodes -- nodes.toSet).toList: _*) {
+      (receiveN(nodes.size).collect { case MemberUp(member) => member.address }.toSet
+        should contain theSameElementsAs nodes.map(node(_).address).toSet)
     }
 
     enterBarrier("join-"+ nodes.map(_.name).mkString(","))
-
   }
 
   def runOnJoinedNodes(a: => Unit): Unit =
@@ -98,14 +109,20 @@ abstract class SampleDynamicallyChangedClusterSpec
 
   "test" should "build cluster join first node to itself" in within(15.seconds) {
     joinToCluster(Seq(first), seedNode)
+    testActor ! "test msg"
+    expectMsg("test msg")
   }
 
   it should "join 2 other nodes" in within(15.seconds) {
     joinToCluster(Seq(second, third), seedNode)
+    testActor ! "test msg 2"
+    expectMsg("test msg 2")
   }
 
   it should "join last node" in within(15.seconds) {
-    joinToCluster(Seq(forth), seedNode)
+    joinToCluster(Seq(fourth), seedNode)
+    testActor ! "test msg 3"
+    expectMsg("test msg 3")
   }
 
 }
