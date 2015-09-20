@@ -62,8 +62,11 @@ object Main extends App with SignalHandler {
       implicit val defaultTimeout = Timeout(500.millis)  // TODO: from config
 
       options.mode match {
-        case Modes.Emulator => EventEmulator.emulate(options.program.get)  // program always exits for that comand
+        case Modes.Emulator =>
+          system.log.info("Start in emulator mode")
+          EventEmulator.emulate(options.program.get)  // program always exits for that comand
         case Modes.Production =>
+          system.log.info("Start in production mode")
           val cluster = Cluster(system)
           var roleHandler: Option[role.RoleHandler] = None
           cluster.selfRoles.foreach {
@@ -86,7 +89,7 @@ object Main extends App with SignalHandler {
   }
 
   override def handle(signal: Signal): Unit = {
-    actorSystem foreach {_.log.debug(s"recieve signal ${signal.getName}")}
+    actorSystem foreach {_.log.info(s"recieve signal ${signal.getName}")}
     if (terminated.compareAndSet(false, true)) {
       actorSystem foreach { system =>
         if (Seq(SIGING, SIGTERM).contains(signal.getName)) {
@@ -95,7 +98,7 @@ object Main extends App with SignalHandler {
         }
       }
     } else {
-      actorSystem foreach {_.log.debug(s"ever terminated, skip")}
+      actorSystem foreach {_.log.info(s"ever terminated, skip")}
     }
   }
 }

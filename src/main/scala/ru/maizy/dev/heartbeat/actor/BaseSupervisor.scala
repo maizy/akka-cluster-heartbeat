@@ -31,11 +31,14 @@ class BaseSupervisor extends Actor with ActorLogging {
 
   import context.dispatcher
 
-  override def receive: Receive = handlerSupervisorEvents orElse handlerClusterEvents
+  override def receive: Receive = LoggingReceive {
+    handlerSupervisorEvents orElse
+    handlerClusterEvents
+  }
 
   protected def getStatMemberSupervisor(member: Member, ignoreMyself: Boolean = true): Future[Option[ActorRef]] = {
-    val myself = member.address != cluster.selfAddress
-    if (member.roles.contains("stat") && (!ignoreMyself || !myself)) {
+    val ignore = ignoreMyself && (member.address == cluster.selfAddress)
+    if (member.roles.contains("stat") && !ignore) {
       context.actorSelection(RootActorPath(member.address) / "user" / "supervisor")
         .resolveOne(5.second) map { Some(_) }
     } else {
@@ -43,13 +46,13 @@ class BaseSupervisor extends Actor with ActorLogging {
     }
   }
 
-  protected def handlerClusterEvents: Receive = LoggingReceive {
+  protected def handlerClusterEvents: Receive = {
     case MemberUp(member) =>
       val selector = getStatMemberSupervisor(member)
 
       selector onSuccess {
         case Some(sv) =>
-          log.debug(s"Member up: ${member.address}")
+          log.debug(s"Member with supervisor up: $sv")
           self ! AddSupervisors(Seq(sv))
         case _ =>
       }
@@ -60,22 +63,25 @@ class BaseSupervisor extends Actor with ActorLogging {
 
     case MemberExited(member) => getStatMemberSupervisor(member) foreach {
       case Some(sv) =>
-        log.debug(s"Member exited: ${member.address}")
+        log.debug(s"Member with supervisor exited: ${sv.path}")
         self ! RemoveSupervisors(Seq(sv))
       case _ =>
     }
   }
 
-  protected def handlerSupervisorEvents: Receive = LoggingReceive {
+  private def describeActors(actors: Seq[ActorRef]): String =
+    actors mkString ", "
+
+  protected def handlerSupervisorEvents: Receive = {
     case StartUp(amount) => startUp(amount)
 
     case AddSupervisors(actors) =>
       supervisorsActors ++= actors
-      log.debug(s"add ${actors.size} svs, current sv set size: ${supervisorsActors.size}")
+      log.info(s"Add supervisors ${describeActors(actors)}, set size: ${supervisorsActors.size}");
 
     case RemoveSupervisors(actors) =>
       supervisorsActors --= actors
-      log.debug(s"remove ${actors.size} svs, current sv set size: ${supervisorsActors.size}")
+      log.info(s"Remove supervisors ${describeActors(actors)}, set size: ${supervisorsActors.size}");
 
     case GetKnownSupervisors =>
       sender ! KnownSupervisors(supervisorsActors.toList)
