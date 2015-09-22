@@ -49,8 +49,7 @@ object Main extends App with SignalHandler {
           additionalConfig += "akka.provider = \"akka.actor.LocalActorRefProvider\""
 
         case Modes.Production =>
-          val roleStr = options.role.get.toString  // role always exists for that mode
-          additionalConfig += "akka.cluster.roles = [\""+ roleStr +"\"]"
+          additionalConfig += "akka.cluster.roles = [\""+ options.role +"\"]"
       }
 
       val config = ConfigFactory.parseString(additionalConfig).withFallback(ConfigFactory.load())
@@ -71,7 +70,7 @@ object Main extends App with SignalHandler {
           var roleHandler: Option[role.RoleHandler] = None
           cluster.selfRoles.foreach {
             case "stat" =>
-              roleHandler = Some(new role.Stat())
+              roleHandler = Some(new role.Stat(options.statsByNode))
           }
 
           roleHandler.foreach { h =>

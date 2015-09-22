@@ -13,6 +13,7 @@
 
     <!-- suppress some verbose loggers -->
     <logger name="akka.cluster.ClusterHeartbeatSender" level="INFO" />
+    <logger name="akka.serialization" level="INFO" />
 
     <root level="DEBUG">
         <appender-ref ref="CONSOLE"/>

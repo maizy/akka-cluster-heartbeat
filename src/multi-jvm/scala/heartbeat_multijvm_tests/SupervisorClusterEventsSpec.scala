@@ -70,8 +70,8 @@ abstract class SupervisorClusterEventsSpec(config: MultiNodeConfig)
   def expecMsgWithTimeout[T](msg: T): T = expectMsg[T](defaultTimeout, msg)
 
   def assertKnownSupervisor(expectedRefs: Set[ActorRef], real: KnownSupervisors): Unit = {
-    real.refs should have length expectedRefs.size
-    real.refs.foreach { ref => assert(expectedRefs.exists(_.compareTo(ref) == 0)) }  // TODO: optimize?
+    real.supervisorsRefs should have length expectedRefs.size
+    real.supervisorsRefs.foreach { ref => assert(expectedRefs.exists(_.compareTo(ref) == 0)) }  // TODO: optimize?
   }
 
   muteDeadLetters(classOf[Any])(system)
@@ -80,7 +80,7 @@ abstract class SupervisorClusterEventsSpec(config: MultiNodeConfig)
   "Supervisors" should "wait for all nodes are ready" in within(defaultTimeout) {
 
     runOn(statNode0) {
-      new Stat startUp(system, cluster)
+      new Stat(2) startUp(system, cluster)
     }
     joinToCluster(Seq(statNode0), seedNode)
 
@@ -109,7 +109,7 @@ abstract class SupervisorClusterEventsSpec(config: MultiNodeConfig)
 
   it should "listen for cluster event MemberUp and get supervisor from new stat node" in within(defaultTimeout) {
     runOn(statNode1, statNode2) {
-      new Stat startUp(system, cluster)
+      new Stat(2) startUp(system, cluster)
     }
     joinToCluster(Seq(statNode1, statNode2), seedNode)
     enterBarrier("other stat node started")

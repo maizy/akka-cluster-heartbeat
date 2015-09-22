@@ -17,13 +17,14 @@ case object Beat
 case object GetStats
 case object BroadcastBeat
 case class ChangeBeatsDelay(newDelay: FiniteDuration)
+case class AddSiblings(refs: Seq[ActorRef])
+case class RemoveSiblings(refs: Seq[ActorRef])
+case object GetSiblings
 
-case class AddSibling(node: ActorRef)
-case class RemoveSibling(node: ActorRef)
-// case object GetSiblings  // TODO
 
 /** data */
 case class Stats(totalBeatsReceived: BigInt)
+case class Siblings(refs: Seq[ActorRef])
 
 
 class Stat extends Actor with ActorLogging {
@@ -55,7 +56,6 @@ class Stat extends Actor with ActorLogging {
     case GetStats => sender ! countStats
 
     case BroadcastBeat =>
-      log.debug("beat")
       siblingNodesPool ! Broadcast(Beat)
       scheduleNextBeat()
 
@@ -65,13 +65,13 @@ class Stat extends Actor with ActorLogging {
       beatsDelay = newDelay
       scheduleNextBeat()
 
-    case AddSibling(node: ActorRef) =>
-      log.info(s"add sibling ${node.path}")
-      siblingNodesPool ! AddRoutee(ActorRefRoutee(node))
+    case AddSiblings(refs: Seq[ActorRef]) =>
+      log.info(s"add ${refs.size} siblings")
+      refs foreach { ref => siblingNodesPool ! AddRoutee(ActorRefRoutee(ref)) }
 
-    case RemoveSibling(node: ActorRef) =>
-      log.info(s"remove sibling ${node.path}")
-      siblingNodesPool ! RemoveRoutee(ActorRefRoutee(node))
+    case RemoveSiblings(refs: Seq[ActorRef]) =>
+      log.info(s"remove ${refs.size} siblings")
+      refs foreach { ref => siblingNodesPool ! RemoveRoutee(ActorRefRoutee(ref)) }
   }
 
   override def postStop(): Unit = {

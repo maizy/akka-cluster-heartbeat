@@ -45,7 +45,7 @@ class SupervisorSpec
       sv1 ! GetKnownSupervisors
       val res = receiveOne(100.millis)
       res shouldBe a[KnownSupervisors]
-      res.asInstanceOf[KnownSupervisors].refs should contain theSameElementsAs Seq(sv2, sv3)
+      res.asInstanceOf[KnownSupervisors].supervisorsRefs should contain theSameElementsAs Seq(sv2, sv3)
     }
   }
 

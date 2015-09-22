@@ -19,13 +19,13 @@ object Modes extends Enumeration with utils.EnumerationMap {
 }
 
 case class Options(
-    mode: Modes.Mode = Modes.Emulator,
-    port: Int = 2550,
+    mode: Modes.Mode = Modes.Production,
+    port: Int = 0,
     host: String = "127.0.0.1",
 
     // production mode
-    role: Option[Roles.Value] = None,
-    statsByNode: Option[Int] = None,
+    role: Roles.Value = Roles.No,
+    statsByNode: Int = 1,
 
     // emulator mode
     program: Option[EmulatorProgram.Value] = None
@@ -56,18 +56,19 @@ object OptionParser {
       text { "production mode (add node to cluster)" }
       children(
         opt[Int]('p', "port")
-          required()
+          text { "port or 0 to random choose" }
+          validate { v => if (v < 0 || v > 65535) failure("should be 0 to 65535") else success }
           action { (value, c) => c.copy(port = value) },
 
         opt[String]('r', "role")
           required()
           valueName enumValues(Roles)
           validate { inEnum(Roles, _) }
-          action { (value, c) => c.copy(role = Roles.valuesMap.get(value)) },
+          action { (value, c) => c.copy(role = Roles.valuesMap.get(value).get) },
 
         opt[Int]('s', "stats-by-node")
           validate { v => if (v < 0) failure("should be great than 0") else success }
-          action { (value, c) => c.copy(statsByNode = Some(value)) }
+          action { (value, c) => c.copy(statsByNode = value) }
       )
     )
 

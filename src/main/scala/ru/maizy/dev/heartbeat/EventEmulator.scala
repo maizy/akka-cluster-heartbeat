@@ -1,7 +1,7 @@
 package ru.maizy.dev.heartbeat
 
 import akka.util.Timeout
-import ru.maizy.dev.heartbeat.actor.{ RemoveSibling, AddSibling, ChangeBeatsDelay, Stat }
+import ru.maizy.dev.heartbeat.actor.{ RemoveSiblings, AddSiblings, ChangeBeatsDelay, Stat }
 import ru.maizy.dev.heartbeat.utils.EnumerationMap
 
 import scala.concurrent.duration._
@@ -61,8 +61,8 @@ object EventEmulator {
       system.log.info("EVENT: add node2, connect nodes")
       for (node1 <- system.actorSelection("user/node1").resolveOne) {
         val node2 = system.actorOf(Props(new Stat(2.second)), "node2")
-        node2 ! AddSibling(node1)
-        node1 ! AddSibling(node2)
+        node2 ! AddSiblings(Seq(node1))
+        node1 ! AddSiblings(Seq(node2))
       }
     },
     (system: ActorSystem) => {
@@ -84,10 +84,9 @@ object EventEmulator {
         node2 <- system.actorSelection("user/node2").resolveOne
       ) {
         val node3 = system.actorOf(Props(new Stat(1.second)), "node3")
-        node2 ! AddSibling(node3)
-        node1 ! AddSibling(node3)
-        node3 ! AddSibling(node1)
-        node3 ! AddSibling(node2)
+        node2 ! AddSiblings(Seq(node3))
+        node1 ! AddSiblings(Seq(node3))
+        node3 ! AddSiblings(Seq(node1, node2))
       }
     },
     (system: ActorSystem) => {
@@ -98,8 +97,8 @@ object EventEmulator {
         node2 <- system.actorSelection("user/node2").resolveOne;
         node3 <- system.actorSelection("user/node2").resolveOne
       ) {
-        node2 ! RemoveSibling(node1)
-        node3 ! RemoveSibling(node1)
+        node2 ! RemoveSiblings(Seq(node1))
+        node3 ! RemoveSiblings(Seq(node1))
         node1 ! PoisonPill
       }
     },
@@ -110,7 +109,7 @@ object EventEmulator {
         node3 <- system.actorSelection("user/node3").resolveOne;
         node2 <- system.actorSelection("user/node2").resolveOne
       ) {
-        node2 ! RemoveSibling(node3)
+        node2 ! RemoveSiblings(Seq(node3))
         node3 ! PoisonPill
       }
     },

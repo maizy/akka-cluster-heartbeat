@@ -14,16 +14,20 @@ import akka.cluster.ClusterEvent.{ UnreachableMember, InitialStateAsEvents }
 import akka.actor.{ RootActorPath, Actor, ActorLogging, ActorRef, Props }
 import akka.event.LoggingReceive
 
-
+/* messages */
 case class StartUp(amountOfStatNodes: Int)
-case class AddSupervisors(refs: Seq[ActorRef])
-case class RemoveSupervisors(refs: Seq[ActorRef])
+case class AddSupervisors(supervisorsRefs: Seq[ActorRef])
+case class RemoveSupervisors(supervisorsRefs: Seq[ActorRef])
 case object GetKnownSupervisors
-case class KnownSupervisors(refs: Seq[ActorRef])
+case object GetStatActors
+
+/* data */
+case class KnownSupervisors(supervisorsRefs: Seq[ActorRef])
+case class StatActors(me: ActorRef, statActorsRefs: Seq[ActorRef])
 
 
 class BaseSupervisor extends Actor with ActorLogging {
-  val statActors = mutable.Set[ActorRef]()
+  val localStatActors = mutable.Set[ActorRef]()
   val supervisorsActors = mutable.Set[ActorRef]()
   var beatDelay = 2.seconds  // TODO: dynamically change
   var nextIndex = 0
@@ -33,6 +37,7 @@ class BaseSupervisor extends Actor with ActorLogging {
 
   override def receive: Receive = LoggingReceive {
     handlerSupervisorEvents orElse
+    handlerStatActorsEvents orElse
     handlerClusterEvents
   }
 
@@ -75,34 +80,48 @@ class BaseSupervisor extends Actor with ActorLogging {
   protected def handlerSupervisorEvents: Receive = {
     case StartUp(amount) => startUp(amount)
 
-    case AddSupervisors(actors) =>
-      supervisorsActors ++= actors
-      log.info(s"Add supervisors ${describeActors(actors)}, set size: ${supervisorsActors.size}");
+    case AddSupervisors(actors: Seq[ActorRef]) =>
+      val newActors = actors.toSet -- supervisorsActors
+      supervisorsActors ++= newActors
+      log.info(s"Add supervisors ${describeActors(newActors.toSeq)}, set size: ${supervisorsActors.size}")
+      newActors.foreach(_ ! GetStatActors)
 
     case RemoveSupervisors(actors) =>
       supervisorsActors --= actors
-      log.info(s"Remove supervisors ${describeActors(actors)}, set size: ${supervisorsActors.size}");
+      log.info(s"Remove supervisors ${describeActors(actors)}, set size: ${supervisorsActors.size}")
 
     case GetKnownSupervisors =>
-      sender ! KnownSupervisors(supervisorsActors.toList)
+      sender ! KnownSupervisors(supervisorsActors.toSeq)
+
+  }
+
+  protected def handlerStatActorsEvents: Receive = {
+    case GetStatActors => sender() ! StatActors(self, localStatActors.toSeq)
+
+    case StatActors(supervisor: ActorRef, statActors: Seq[ActorRef]) =>
+      if (!supervisorsActors.contains(supervisor)) {
+        log.error(s"Got stat actors from unknown supervisor $supervisor, ignore them")
+      } else {
+        log.info(s"Got ${statActors.size} new stat actors from $supervisor")
+        statActors foreach { _ ! AddSiblings(localStatActors.toSeq) }
+      }
   }
 
   protected def startUp(amount: Int): Unit = {
     for (index <- 0 until amount) {
-      addStatActor()
+      addLocalStatActor()
     }
     cluster.subscribe(self, initialStateMode = InitialStateAsEvents, classOf[MemberEvent],
       classOf[MemberUp], classOf[MemberExited], classOf[MemberRemoved], classOf[ReachableMember],
       classOf[UnreachableMember])
   }
 
-  private def addStatActor(): ActorRef = {
+  private def addLocalStatActor(): ActorRef = {
     val newActorRef = context.actorOf(Props(new Stat(beatDelay)), s"stat-$nextIndex")
     nextIndex += 1
-    for (actor <- statActors) {
-      actor ! AddSibling(newActorRef)
-    }
-    statActors += newActorRef
+    newActorRef ! AddSiblings(localStatActors.toSeq)
+    localStatActors.foreach { _ ! AddSiblings(Seq(newActorRef)) }
+    localStatActors += newActorRef
     newActorRef
   }
 }
