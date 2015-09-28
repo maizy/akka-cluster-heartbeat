@@ -34,8 +34,8 @@ class StatSpec
       node ! Beat
     }
 
-    node ! GetStats
-    expectMsg(Stats(5))
+    node ! GetStatistics
+    expectMsg(Statistics(5))
   }
 
 }

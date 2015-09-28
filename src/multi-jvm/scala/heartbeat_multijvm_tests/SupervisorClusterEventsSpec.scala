@@ -9,8 +9,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import org.scalatest.FlatSpecLike
 import com.typesafe.config.ConfigFactory
-import akka.actor.{ ActorSelection, ActorRef }
-import akka.remote.testconductor.RoleName
+import akka.actor.ActorRef
 import akka.remote.testkit.MultiNodeConfig
 import ru.maizy.dev.heartbeat.actor.{ GetKnownSupervisors, KnownSupervisors }
 import ru.maizy.dev.heartbeat.role.Stat
@@ -49,6 +48,7 @@ class SupervisorClusterEventsSpecMultiJvmNo extends SupervisorClusterEventsSpec
 abstract class SupervisorClusterEventsSpec(config: MultiNodeConfig)
   extends MultiNodeBaseSpec(config)
   with FlatSpecLike
+  with SupervisorTestUtils
 {
   import ClusterEventsMultiNodeConfig._
 
@@ -60,12 +60,6 @@ abstract class SupervisorClusterEventsSpec(config: MultiNodeConfig)
   implicit val dispatcher = system.dispatcher
 
   override def initialParticipants: Int = roles.size
-
-  def getSupervisorActorForNode(nodeRole: RoleName): Future[ActorRef] =
-      getSupervisortSelectForNode(nodeRole).resolveOne(defaultTimeout)
-
-  def getSupervisortSelectForNode(nodeRole: RoleName): ActorSelection =
-      system.actorSelection(node(nodeRole) / "user" / "supervisor")
 
   def expecMsgWithTimeout[T](msg: T): T = expectMsg[T](defaultTimeout, msg)
 
@@ -93,10 +87,7 @@ abstract class SupervisorClusterEventsSpec(config: MultiNodeConfig)
 
   "first stat node" should "ignore nodes without stat role" in within(defaultTimeout) {
     joinToCluster(Seq(noRoleNode), seedNode)
-    runOnJoinedNodes {
-      awaitAssert(cluster.state.members should have size 2)
-      awaitAssert(cluster.state.members.toList.map(_.roles) should contain theSameElementsAs Seq(Set("stat"), Set("no")))
-    }
+    awaitClusterReady(Seq("stat", "no"))
 
     runOn(statNode0) {
       val firstSupervisor = getSupervisorActorForNode(statNode0).await
@@ -114,14 +105,9 @@ abstract class SupervisorClusterEventsSpec(config: MultiNodeConfig)
     joinToCluster(Seq(statNode1, statNode2), seedNode)
     enterBarrier("other stat node started")
 
-    runOnJoinedNodes {
-      awaitAssert(cluster.state.members should have size 4)
-      awaitAssert(
-        cluster.state.members.toList.map(_.roles)
-          should contain theSameElementsAs
-          Seq(Set("stat"), Set("no"), Set("stat"), Set("stat"))
-      )
+    awaitClusterReady(Seq("stat", "no", "stat", "stat"))
 
+    runOnJoinedNodes {
       statNodes.foreach { node =>
         val thatNodeSupervisor = getSupervisortSelectForNode(node)
         val otherNodeSupervisors =

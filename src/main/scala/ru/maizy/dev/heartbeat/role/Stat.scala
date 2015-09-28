@@ -11,6 +11,8 @@ import ru.maizy.dev.heartbeat.actor.{ StartUp, BaseSupervisor }
  */
 class Stat(val startUpAmountOfStatNodes: Int) extends RoleHandler {
 
+  require(startUpAmountOfStatNodes > 0)
+
   var supervisor: Option[ActorRef] = None
 
   override def startUp(system: ActorSystem, cluster: Cluster): Unit = {

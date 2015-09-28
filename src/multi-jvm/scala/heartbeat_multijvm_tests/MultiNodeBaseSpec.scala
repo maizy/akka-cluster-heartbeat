@@ -80,6 +80,14 @@ abstract class MultiNodeBaseSpec(config: MultiNodeConfig)
     runOn(currentClusterNodes.toList: _*) {
       a
     }
+  
+  def awaitClusterReady(expectedSingleRoles: Seq[String]): Unit = {
+    val expectedRoles = expectedSingleRoles.map(Set(_))
+    runOnJoinedNodes {
+      awaitAssert(cluster.state.members should have size expectedSingleRoles.size)
+      awaitAssert(cluster.state.members.toSeq.map(_.roles) should contain theSameElementsAs expectedRoles)
+    }
+  }
 
   def cleanUp(): Unit =
     cluster.unsubscribe(testActor)

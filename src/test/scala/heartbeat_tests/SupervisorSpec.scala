@@ -65,9 +65,4 @@ class SupervisorSpec
     }
 
   }
-
-  // TODO
-  // it should "return start actors on GetStatActors" in
-  // it should "listen MemberUp cluster event and add member supervisor on it" in
-  // it should "listen MemberExit cluster event and remove member supervisor on it" in
 }
